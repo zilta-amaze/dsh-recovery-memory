@@ -5,12 +5,12 @@
  */
 import assert from 'node:assert/strict'
 import { mkdtemp, readFile, stat } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { apply } from '../index.js'
 import { ALPHABET, CODE_LENGTH, formatCode, generateCode, normalizeCode } from '../lib/code.js'
-import { RecoveryStore, resolveDshHome } from '../lib/store.js'
+import { RecoveryStore, expandRecordDir, resolveDshHome } from '../lib/store.js'
 import { buildSnapshot, formatTime, renderDigest } from '../lib/transcript.js'
 
 const SAMPLE_CODE = 'ABCDEFGHJKLMNPQRSTUV'
@@ -399,4 +399,34 @@ test('oversized restores say what was left on disk instead of dropping it silent
   assert.ok(digest.omitted > 0)
   assert.match(digest.text, /本次载入 \d+\/40 条；其余 \d+ 条仍在本机的完整记录里/u)
   assert.ok(digest.text.trimEnd().endsWith('记忆已恢复。'))
+})
+
+test('the record directory can be pointed at another location', () => {
+  assert.equal(expandRecordDir('/storage/emulated/0/Download/dsh-recovery'), '/storage/emulated/0/Download/dsh-recovery')
+  assert.equal(expandRecordDir('~/sync/recovery'), join(homedir(), 'sync/recovery'))
+  assert.equal(expandRecordDir('memories', { DSH_HOME: '/tmp/dsh-home' }), '/tmp/dsh-home/memories')
+
+  const fromConfig = new RecoveryStore({ dir: '/tmp/custom-records' })
+  assert.equal(fromConfig.dir, '/tmp/custom-records')
+  assert.equal(fromConfig.dirSource, 'config')
+
+  const fromEnv = new RecoveryStore({}, { DSH_HOME: '/tmp/dsh-home', DSH_RECOVERY_DIR: '/tmp/from-env' })
+  assert.equal(fromEnv.dir, '/tmp/from-env')
+  assert.equal(fromEnv.dirSource, 'env')
+
+  const fallback = new RecoveryStore({}, { DSH_HOME: '/tmp/dsh-home' })
+  assert.equal(fallback.dir, '/tmp/dsh-home/recovery')
+  assert.equal(fallback.dirSource, 'default')
+})
+
+test('/recovery where reports the directory and how to move it', async () => {
+  const { dir, store } = await tempStore()
+  const ctx = fakeCtx()
+  apply(ctx, { dir: store.dir })
+  const out = await run(ctx.registered, fakeAgent(fakeSession([])), 'where')
+  assert.equal(out.kind, 'success')
+  assert.ok(out.text.includes(dir), out.text)
+  assert.match(out.text, /配置项 dir/u)
+  assert.match(out.text, /dir: \/storage\/emulated\/0\/Download\/dsh-recovery/u)
+  assert.match(out.text, /可写/u)
 })

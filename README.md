@@ -108,7 +108,51 @@ bundle 模式会应用本包自带的 `cordis.patch.yml`。
 | `restoreChars` | `48000` | 恢复时注入的字符预算。**装得下就完整注入**；装不下才保留开头 35% + 结尾 65%，并注明剩余条目仍在本机记录里 |
 | `maxRecordBytes` | `4000000` | 单条记忆落盘的大小上限（约 4 MB），正常对话不会被裁剪 |
 | `autoSummary` | `true` | 恢复后是否自动让模型总结上一段会话 |
-| `dir` | `$DSH_HOME/recovery` | 覆盖记忆目录（一般不用改） |
+| `dir` | `$DSH_HOME/recovery` | 记忆目录，可指向共享存储/同步盘；支持 `~/` 与相对 `$DSH_HOME` 的路径 |
+
+环境变量 `DSH_RECOVERY_DIR` 也能指定目录，优先级是：配置 `dir` > 环境变量 > 默认。
+
+## 记忆存在哪里
+
+默认在 `$DSH_HOME/recovery/`，本机就是：
+
+```text
+/data/user/0/com.dsharnessmobile.shell/files/home/.dsh/recovery/
+```
+
+（`/data/data/com.dsharnessmobile.shell/...` 是同一目录的另一个别名。）
+
+每个恢复码一个 JSON 文件，权限 `0600`、目录 `0700`。`/recovery where` 可以随时查看
+当前目录、是否可写、有几条记录。
+
+## 换到别的位置
+
+优先级：配置 `dir` > 环境变量 `DSH_RECOVERY_DIR` > 默认。
+
+在 profile 的 `cordis.patch.yml` 里改：
+
+```yaml
+- insert:
+    - id: dsh-recovery
+      name: dsh-recovery
+      config:
+        dir: /storage/emulated/0/Download/dsh-recovery
+```
+
+- 绝对路径直接使用；`~/xxx` 展开到系统 home；相对路径按 `$DSH_HOME` 解析；
+- 目录在插件启动时解析一次，**改完要重启引擎**；
+- 已有记录不会自动搬家：把旧目录里的 `*.json` 拷进新目录即可继续用原来的恢复码。
+
+常见落点：
+
+| 想放哪 | `dir` 示例 | 说明 |
+|---|---|---|
+| 共享存储（文件管理器可见、可备份） | `/storage/emulated/0/Download/dsh-recovery` | 本机实测可写；但 `0600` 会退化为 `0660` |
+| 同步盘（跨设备） | `~/Sync/dsh-recovery` | 依赖同步工具覆盖该目录；另一台设备要装同一插件并指向同步后的路径 |
+| 外置 SD 卡 | `/storage/XXXX-XXXX/dsh-recovery` | 需要该卷对应用可写 |
+
+⚠️ 放到共享存储/同步盘后，记忆仍是明文 JSON，能读该目录的其他应用也能看到内容；
+隐私优先的对话建议留在默认目录。
 
 ## 记忆里有什么
 

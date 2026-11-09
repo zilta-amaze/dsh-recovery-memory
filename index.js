@@ -30,6 +30,7 @@ const USAGE = [
   '  /recovery memory <恢复码>  在新会话中恢复该对话的记忆',
   '  /recovery list             列出本机已保存的恢复码',
   '  /recovery delete <恢复码>  删除一条恢复记忆',
+  '  /recovery where            查看记忆保存在哪个目录、怎么换位置',
   '',
   '恢复码是 20 个字母（不含 I/O，可带 - 分隔），例如 ABCDE-FGHJK-LMNPQ-RSTUV。',
   '',
@@ -54,7 +55,7 @@ export function apply(ctx, config = {}) {
     name: 'recovery',
     description: '把当前对话打包成 20 字母恢复码；在新会话用恢复码恢复记忆',
     input: {
-      hint: 'create [备注] | memory <恢复码> [--no-summary] | list | delete <恢复码>'
+      hint: 'create [备注] | memory <恢复码> [--no-summary] | list | delete <恢复码> | where'
     },
     handler: (invocation) => execute(invocation, store)
   })
@@ -79,6 +80,8 @@ async function execute(invocation, store) {
         return await restoreMemory(invocation, store, parsed.code, parsed.noSummary)
       case 'list':
         return await listMemories(store)
+      case 'where':
+        return await whereMemories(store)
       case 'delete':
         return await deleteMemory(store, parsed.code)
       case 'missing-code':
@@ -234,6 +237,41 @@ async function listMemories(store) {
 }
 
 /**
+ * Show where records live and how to move them elsewhere.
+ *
+ * @param {RecoveryStore} store - Record store.
+ * @returns {Promise<{ kind: 'success' | 'error', text: string }>} UI result.
+ */
+async function whereMemories(store) {
+  const info = await store.describe()
+  const source = info.source === 'config'
+    ? '配置项 dir'
+    : info.source === 'env'
+      ? '环境变量 DSH_RECOVERY_DIR'
+      : '默认（$DSH_HOME/recovery）'
+  const state = info.exists
+    ? `${info.writable ? '可写' : '不可写'} · ${info.records} 条记忆`
+    : '尚未创建（第一次 /recovery create 时自动建立）'
+  return {
+    kind: 'success',
+    text: [
+      `记忆目录：${info.dir}`,
+      `来源：${source}`,
+      `状态：${state}`,
+      '',
+      '换位置：在 profile 的 cordis.patch.yml 里给 dsh-recovery 加配置，例如',
+      '  - id: dsh-recovery',
+      '    config:',
+      '      dir: /storage/emulated/0/Download/dsh-recovery',
+      '支持 ~ 开头；相对路径按 $DSH_HOME 解析。改完需重启引擎。',
+      '',
+      '注意：换到共享存储/同步盘后，文件仍是明文 JSON，且 0600 权限在部分文件系统上',
+      '不生效（本机实测 /storage/emulated/0 会退化成 0660）。'
+    ].join('\n')
+  }
+}
+
+/**
  * Delete one recovery record.
  *
  * @param {RecoveryStore} store - Record store.
@@ -356,6 +394,7 @@ function parseInput(rawInput) {
   const lower = input.toLowerCase()
   if (lower === 'create' || lower === 'new' || lower === 'save') return { kind: 'create', label: '' }
   if (lower === 'list' || lower === 'ls') return { kind: 'list' }
+  if (lower === 'where' || lower === 'dir' || lower === 'path') return { kind: 'where' }
   if (lower === 'help' || lower === '?' || lower === '-h' || lower === '--help') return { kind: 'help' }
   if (lower === 'memory' || lower === 'restore' || lower === 'load') return { kind: 'missing-code', action: 'memory' }
   if (lower === 'delete' || lower === 'remove' || lower === 'rm' || lower === 'del') {
