@@ -12,6 +12,14 @@
   ],
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zilta-amaze/dsh-recovery.git"
+  },
+  "homepage": "https://github.com/zilta-amaze/dsh-recovery#readme",
+  "bugs": {
+    "url": "https://github.com/zilta-amaze/dsh-recovery/issues"
+  },
   "main": "./index.js",
   "exports": {
     ".": "./index.js",
