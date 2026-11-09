@@ -85,6 +85,15 @@ ABCDE-FGHJK-LMNPQ-RSTUV
 插件是纯 ESM、零运行时依赖（只用 Node 内置模块），可以直接以本地链接的方式装进
 任意 DSH profile。
 
+### 最快：直接从 GitHub 安装
+
+```sh
+dsh plugin --profile web add github:zilta-amaze/dsh-recovery
+```
+
+已验证可用（pnpm 从仓库拉取，零依赖，约 7 秒）。装完还要把 `dsh-recovery` 列进
+profile 的 `dsh.profile.bundles`，或按下面的方式在 patch 里插一行，再重启引擎。
+
 ### 方式一：在 profile 里插入一行（推荐给自定义 profile）
 
 ```sh
