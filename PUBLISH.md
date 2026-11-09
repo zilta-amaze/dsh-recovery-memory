@@ -77,4 +77,6 @@ npm publish --access public
 Add `screenshots.json` next to `package.json` with 1–8 paths relative to it (no leading `/`, no
 `..`), then push the images. For a market **tile**, the entry's `icon:` must be a GitHub-hosted
 raster (`png`/`jpg`/`webp`); the `icon.svg` shipped for the plugin manager is not accepted there.
-This package ships no icon yet — a square 96px PNG under `assets/` would be the next step.
+The market tile is already in place: `assets/icon.png` (512×512 PNG, GitHub-hosted) is declared as
+`icon:` in [`market/dsh-recovery.yml`](market/dsh-recovery.yml), and `icon.svg` is the matching vector
+for the plugin manager.

@@ -23,13 +23,17 @@
   "main": "./index.js",
   "exports": {
     ".": "./index.js",
+    "./icon": "./icon.svg",
     "./package.json": "./package.json"
   },
   "files": [
     "index.js",
     "lib/*.js",
     "cordis.patch.yml",
+    "icon.svg",
+    "assets/icon.png",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "engines": {
