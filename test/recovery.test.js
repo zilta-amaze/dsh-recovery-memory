@@ -25,10 +25,18 @@ function fakeSession(messages, { id = 'session-test', cwd = '/work/demo' } = {})
   return { id, header: { cwd }, deriveMessages: () => messages }
 }
 
-/** Fake agent that records injected messages. */
-function fakeAgent(session) {
+/** Fake agent that records injected messages and follow-ups. */
+function fakeAgent(session, { canFollowup = true } = {}) {
   const injected = []
-  return { session, injected, inject: (entry) => { injected.push(entry) } }
+  const followups = []
+  const agent = {
+    session,
+    injected,
+    followups,
+    inject: (entry) => { injected.push(entry) }
+  }
+  if (canFollowup) agent.followup = (entry) => { followups.push(entry) }
+  return agent
 }
 
 /** Fake Cordis context that captures command registrations. */
@@ -209,7 +217,17 @@ test('/recovery create then /recovery memory restores the transcript', async () 
   assert.match(injected.content[0].text, /我们在做一个记忆恢复插件/u)
   assert.match(injected.content[0].text, /好的，先设计恢复码格式/u)
   assert.match(injected.content[0].text, /不是本轮的新指令/u)
+  assert.match(injected.content[0].text, /【请先总结】/u)
   assert.ok(Object.isFrozen(injected))
+
+  // Restoring automatically asks the model to summarize the recovered session.
+  assert.equal(restoredAgent.followups.length, 1)
+  const followup = restoredAgent.followups[0]
+  assert.equal(followup.role, 'user')
+  assert.equal(followup.content[0].text, '请总结上面恢复的这段会话。')
+  assert.equal(followup.source.kind, 'recovery')
+  assert.equal(followup.source.summary, true)
+  assert.match(restored.text, /模型正据此总结上一段会话/u)
 })
 
 test('memory shorthand accepts concatenated codes and bare codes', async () => {
@@ -283,4 +301,67 @@ test('stored records stay private and readable JSON', async () => {
   assert.equal(record.code, code)
   assert.equal(record.version, 1)
   assert.equal(record.messages[0].text, 'secret')
+})
+
+test('--no-summary restores without asking for a summary', async () => {
+  const { store } = await tempStore()
+  const ctx = fakeCtx()
+  apply(ctx, { dir: store.dir })
+  const created = await run(ctx.registered, fakeAgent(fakeSession([message('user', [{ type: 'text', text: '不要总结我' }])])), 'create')
+  const code = codeFromText(created.text)
+
+  const agent = fakeAgent(fakeSession([]))
+  const restored = await run(ctx.registered, agent, `memory ${code} --no-summary`)
+  assert.equal(restored.kind, 'success')
+  assert.equal(agent.followups.length, 0)
+  assert.doesNotMatch(agent.injected[0].content[0].text, /【请先总结】/u)
+  assert.doesNotMatch(restored.text, /模型正据此总结/u)
+})
+
+test('autoSummary: false disables summaries at the profile level', async () => {
+  const { store } = await tempStore()
+  const ctx = fakeCtx()
+  apply(ctx, { dir: store.dir, autoSummary: false })
+  const created = await run(ctx.registered, fakeAgent(fakeSession([message('user', [{ type: 'text', text: '配置关闭' }])])), 'create')
+  const code = codeFromText(created.text)
+
+  const agent = fakeAgent(fakeSession([]))
+  await run(ctx.registered, agent, `memory ${code}`)
+  assert.equal(agent.followups.length, 0)
+  assert.doesNotMatch(agent.injected[0].content[0].text, /【请先总结】/u)
+})
+
+test('restore still works when the agent cannot be woken for a summary', async () => {
+  const { store } = await tempStore()
+  const ctx = fakeCtx()
+  apply(ctx, { dir: store.dir })
+  const created = await run(ctx.registered, fakeAgent(fakeSession([message('user', [{ type: 'text', text: '没有 followup' }])])), 'create')
+  const code = codeFromText(created.text)
+
+  const agent = fakeAgent(fakeSession([]), { canFollowup: false })
+  const restored = await run(ctx.registered, agent, `memory ${code}`)
+  assert.equal(restored.kind, 'success')
+  assert.equal(agent.injected.length, 1)
+  assert.match(restored.text, /不支持自动总结/u)
+})
+
+test('digest carries the summary instruction only when asked', () => {
+  const record = {
+    code: SAMPLE_CODE,
+    createdAt: '2026-11-09T14:20:00.000Z',
+    stats: { sourceMessages: 2 },
+    messages: [
+      { role: 'user', text: '第一个问题' },
+      { role: 'assistant', text: '第一个回答' }
+    ]
+  }
+  const plain = renderDigest(record, 5_000)
+  assert.equal(plain.summarized, false)
+  assert.doesNotMatch(plain.text, /【请先总结】/u)
+
+  const summarized = renderDigest(record, 5_000, { summarize: true })
+  assert.equal(summarized.summarized, true)
+  assert.match(summarized.text, /【请先总结】/u)
+  assert.match(summarized.text, /3–6 条要点/u)
+  assert.ok(summarized.text.length <= 5_000)
 })

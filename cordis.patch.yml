@@ -12,3 +12,6 @@
         restoreChars: 12000
         # Ceiling for one stored transcript, in bytes.
         maxRecordBytes: 400000
+        # Ask the model to summarize the recovered conversation after every
+        # `/recovery memory`. Set to false to restore silently.
+        autoSummary: true

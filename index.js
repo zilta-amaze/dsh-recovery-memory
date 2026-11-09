@@ -31,8 +31,13 @@ const USAGE = [
   '  /recovery list             列出本机已保存的恢复码',
   '  /recovery delete <恢复码>  删除一条恢复记忆',
   '',
-  '恢复码是 20 个字母（不含 I/O，可带 - 分隔），例如 ABCDE-FGHJK-LMNPQ-RSTUV。'
+  '恢复码是 20 个字母（不含 I/O，可带 - 分隔），例如 ABCDE-FGHJK-LMNPQ-RSTUV。',
+  '',
+  '恢复后会自动让模型总结上一段会话；加 --no-summary 可跳过这次总结。'
 ].join('\n')
+
+/** The follow-up that makes the model summarize the restored conversation. */
+const SUMMARY_REQUEST = '请总结上面恢复的这段会话。'
 
 /**
  * Register the `/recovery` command.
@@ -49,7 +54,7 @@ export function apply(ctx, config = {}) {
     name: 'recovery',
     description: '把当前对话打包成 20 字母恢复码；在新会话用恢复码恢复记忆',
     input: {
-      hint: 'create [备注] | memory <恢复码> | list | delete <恢复码>'
+      hint: 'create [备注] | memory <恢复码> [--no-summary] | list | delete <恢复码>'
     },
     handler: (invocation) => execute(invocation, store)
   })
@@ -71,7 +76,7 @@ async function execute(invocation, store) {
       case 'create':
         return await createMemory(invocation, store, parsed.label)
       case 'restore':
-        return await restoreMemory(invocation, store, parsed.code)
+        return await restoreMemory(invocation, store, parsed.code, parsed.noSummary)
       case 'list':
         return await listMemories(store)
       case 'delete':
@@ -135,9 +140,10 @@ async function createMemory(invocation, store, label) {
  * @param {object} invocation - Command invocation.
  * @param {RecoveryStore} store - Record store.
  * @param {string} rawCode - Whatever the user typed for the code.
+ * @param {boolean} [noSummary] - Skip the automatic summary for this restore.
  * @returns {Promise<{ kind: 'success' | 'error', text: string }>} UI result.
  */
-async function restoreMemory(invocation, store, rawCode) {
+async function restoreMemory(invocation, store, rawCode, noSummary = false) {
   const normalized = normalizeCode(rawCode)
   if (!normalized.ok) {
     return {
@@ -159,9 +165,46 @@ async function restoreMemory(invocation, store, rawCode) {
     return { kind: 'error', text: '当前客户端不支持注入恢复记忆。' }
   }
 
-  const digest = renderDigest(record, store.restoreChars)
+  const canFollowup = typeof agent.followup === 'function'
+  const summarize = noSummary !== true && summaryEnabled(store) && canFollowup
+  const digest = renderDigest(record, store.restoreChars, { summarize })
   agent.inject(createMemoryMessage(digest.text, normalized.code))
-  return { kind: 'success', text: renderRestored(record, digest) }
+
+  let summaryStarted = false
+  if (summarize) {
+    try {
+      agent.followup(createSummaryMessage())
+      summaryStarted = true
+    } catch {
+      // The memory is already injected; a failed wake-up only loses the summary.
+    }
+  }
+  return {
+    kind: 'success',
+    text: renderRestored(record, digest, { supported: canFollowup, started: summaryStarted })
+  }
+}
+
+/**
+ * Whether automatic post-restore summaries are enabled.
+ * @param {RecoveryStore} store - Record store carrying the plugin config.
+ * @returns {boolean} True unless the profile explicitly disabled it.
+ */
+function summaryEnabled(store) {
+  return store.config?.autoSummary !== false
+}
+
+/**
+ * Build the follow-up message that asks for the summary.
+ * @returns {object} Frozen user-role message.
+ */
+function createSummaryMessage() {
+  return deepFreeze({
+    id: randomUUID(),
+    role: 'user',
+    content: [{ type: 'text', text: SUMMARY_REQUEST }],
+    source: { kind: 'recovery', summary: true }
+  })
 }
 
 /**
@@ -262,9 +305,10 @@ function renderCreated(record, omitted) {
  *
  * @param {object} record - Restored record.
  * @param {{ included: number, omitted: number, chars: number, bytes: number }} digest - Digest stats.
+ * @param {{ supported: boolean, started: boolean }} [summary] - Summary capability and state.
  * @returns {string} Confirmation text.
  */
-function renderRestored(record, digest) {
+function renderRestored(record, digest, summary = { supported: false, started: false }) {
   const stats = record.stats ?? {}
   const total = Number.isSafeInteger(stats.sourceMessages) ? stats.sourceMessages : record.messages.length
   const dropped = digest.omitted > 0 ? `，省略 ${digest.omitted} 条较早消息` : ''
@@ -276,7 +320,12 @@ function renderRestored(record, digest) {
     `  · 本次载入 ${digest.included} 条，约 ${formatBytes(digest.bytes)}${dropped}`,
     ...title,
     '',
-    '这段记忆已作为上下文注入当前会话，从你下一条消息开始对模型生效。'
+    summary.started === true
+      ? '这段记忆已注入当前会话，模型正据此总结上一段会话；你也可以直接接着提问。'
+      : '这段记忆已作为上下文注入当前会话，从你下一条消息开始对模型生效。',
+    ...(summary.started !== true && summary.supported === false
+      ? ['', '当前环境不支持自动总结，你可以直接问“刚才那个会话讲了什么”。']
+      : [])
   ].join('\n')
 }
 
@@ -290,8 +339,13 @@ function renderRestored(record, digest) {
  * @returns {{ kind: string, code?: string, label?: string, action?: string }} Parse result.
  */
 function parseInput(rawInput) {
-  const input = String(rawInput ?? '').trim()
+  const tokens = String(rawInput ?? '').trim().split(/\s+/u).filter((token) => token !== '')
+  const noSummary = tokens.some((token) => token === '--no-summary' || token === '-n')
+  const input = tokens
+    .filter((token) => token !== '--no-summary' && token !== '-n')
+    .join(' ')
   if (input === '') return { kind: 'help' }
+  const withFlag = (parsed) => ({ ...parsed, noSummary })
 
   const lower = input.toLowerCase()
   if (lower === 'create' || lower === 'new' || lower === 'save') return { kind: 'create', label: '' }
@@ -307,28 +361,32 @@ function parseInput(rawInput) {
   const tail = rest.join(' ').trim()
 
   if (command === 'memory' || command === 'restore' || command === 'load') {
-    return tail === '' ? { kind: 'missing-code', action: 'memory' } : { kind: 'restore', code: stripSeparators(tail) }
+    return tail === ''
+      ? { kind: 'missing-code', action: 'memory' }
+      : withFlag({ kind: 'restore', code: stripSeparators(tail) })
   }
   if (command === 'create' || command === 'new' || command === 'save') {
     return { kind: 'create', label: tail }
   }
   if (command === 'delete' || command === 'remove' || command === 'rm' || command === 'del') {
-    return tail === '' ? { kind: 'missing-code', action: 'delete' } : { kind: 'delete', code: stripSeparators(tail) }
+    return tail === ''
+      ? { kind: 'missing-code', action: 'delete' }
+      : withFlag({ kind: 'delete', code: stripSeparators(tail) })
   }
 
   // A bare code is a shorthand for `memory <code>`.
-  if (normalizeCode(input).ok) return { kind: 'restore', code: input }
+  if (normalizeCode(input).ok) return withFlag({ kind: 'restore', code: input })
 
   // `memory<code>` / `delete<code>` with no separator, as in the short form
   // `/recovery memoryABCDEFGHJKLMNPQRSTUV`.
   for (const prefix of ['memory', 'restore', 'load']) {
     if (lower.startsWith(prefix) && input.length > prefix.length) {
-      return { kind: 'restore', code: stripSeparators(input.slice(prefix.length)) }
+      return withFlag({ kind: 'restore', code: stripSeparators(input.slice(prefix.length)) })
     }
   }
   for (const prefix of ['delete', 'remove']) {
     if (lower.startsWith(prefix) && input.length > prefix.length) {
-      return { kind: 'delete', code: stripSeparators(input.slice(prefix.length)) }
+      return withFlag({ kind: 'delete', code: stripSeparators(input.slice(prefix.length)) })
     }
   }
 
