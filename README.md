@@ -1,5 +1,8 @@
 # dsh-recovery
 
+[![tests](https://github.com/zilta-amaze/dsh-recovery/actions/workflows/ci.yml/badge.svg)](https://github.com/zilta-amaze/dsh-recovery/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 给 DeepSeek Harness 用的「对话记忆恢复」插件：
 
 - `/recovery create` —— 把当前对话打包成一条记忆，生成 **20 个字母的恢复码**；
