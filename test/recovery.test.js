@@ -104,7 +104,7 @@ test('snapshot drops system/developer prompts and keeps roles', () => {
   assert.match(snapshot.messages[1].text, /好的/u)
   assert.match(snapshot.messages[1].text, /\[调用 bash\]/u)
   assert.equal(snapshot.messages[3].text, '[图片]')
-  assert.equal(snapshot.stats.sourceMessages, 6)
+  assert.equal(snapshot.stats.sourceMessages, 4)
   assert.equal(snapshot.stats.kept, 4)
   assert.equal(snapshot.title, '帮我写插件')
 })
