@@ -1,5 +1,5 @@
 /**
- * Offline tests for dsh-recovery. They exercise the real command handler with a
+ * Offline tests for dsh-recovery-memory. They exercise the real command handler with a
  * fake Cordis context and a fake agent, so no DSH server or model call is
  * needed.
  */
@@ -61,7 +61,7 @@ function codeFromText(text) {
 
 /** Fresh record directory per test. */
 async function tempStore(config = {}) {
-  const dir = await mkdtemp(join(tmpdir(), 'dsh-recovery-test-'))
+  const dir = await mkdtemp(join(tmpdir(), 'dsh-recovery-memory-test-'))
   return { dir, store: new RecoveryStore({ dir, ...config }) }
 }
 
@@ -402,7 +402,7 @@ test('oversized restores say what was left on disk instead of dropping it silent
 })
 
 test('the record directory can be pointed at another location', () => {
-  assert.equal(expandRecordDir('/storage/emulated/0/Download/dsh-recovery'), '/storage/emulated/0/Download/dsh-recovery')
+  assert.equal(expandRecordDir('/storage/emulated/0/Download/dsh-recovery-memory'), '/storage/emulated/0/Download/dsh-recovery-memory')
   assert.equal(expandRecordDir('~/sync/recovery'), join(homedir(), 'sync/recovery'))
   assert.equal(expandRecordDir('memories', { DSH_HOME: '/tmp/dsh-home' }), '/tmp/dsh-home/memories')
 
@@ -427,6 +427,6 @@ test('/recovery where reports the directory and how to move it', async () => {
   assert.equal(out.kind, 'success')
   assert.ok(out.text.includes(dir), out.text)
   assert.match(out.text, /配置项 dir/u)
-  assert.match(out.text, /dir: \/storage\/emulated\/0\/Download\/dsh-recovery/u)
+  assert.match(out.text, /dir: \/storage\/emulated\/0\/Download\/dsh-recovery-memory/u)
   assert.match(out.text, /可写/u)
 })

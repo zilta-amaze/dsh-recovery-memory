@@ -1,5 +1,5 @@
 /**
- * dsh-recovery — conversation memory that survives a new conversation.
+ * dsh-recovery-memory — conversation memory that survives a new conversation.
  *
  * `/recovery create` snapshots the current conversation, stores it under
  * `$DSH_HOME/recovery/`, and returns a 20-letter recovery code.
@@ -11,7 +11,7 @@
  * so it loads from a linked profile without resolving any `@deepseek-ai/*`
  * package.
  *
- * @module dsh-recovery
+ * @module dsh-recovery-memory
  */
 import { randomUUID } from 'node:crypto'
 import { CODE_LENGTH, formatCode, normalizeCode } from './lib/code.js'
@@ -19,7 +19,7 @@ import { RECORD_VERSION, RecoveryStore } from './lib/store.js'
 import { CLOSING, buildSnapshot, formatTime, renderDigest } from './lib/transcript.js'
 
 /** Cordis plugin name. */
-export const name = 'dsh-recovery'
+export const name = 'dsh-recovery-memory'
 
 /** Services this plugin needs composed before it starts. */
 export const inject = ['commands']
@@ -259,10 +259,10 @@ async function whereMemories(store) {
       `来源：${source}`,
       `状态：${state}`,
       '',
-      '换位置：在 profile 的 cordis.patch.yml 里给 dsh-recovery 加配置，例如',
-      '  - id: dsh-recovery',
+      '换位置：在 profile 的 cordis.patch.yml 里给 dsh-recovery-memory 加配置，例如',
+      '  - id: dsh-recovery-memory',
       '    config:',
-      '      dir: /storage/emulated/0/Download/dsh-recovery',
+      '      dir: /storage/emulated/0/Download/dsh-recovery-memory',
       '支持 ~ 开头；相对路径按 $DSH_HOME 解析。改完需重启引擎。',
       '',
       '注意：换到共享存储/同步盘后，文件仍是明文 JSON，且 0600 权限在部分文件系统上',

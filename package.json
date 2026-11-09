@@ -1,5 +1,5 @@
 {
-  "name": "dsh-recovery",
+  "name": "dsh-recovery-memory",
   "version": "0.1.0",
   "description": "Recovery codes for DeepSeek Harness conversations: /recovery create snapshots the current memory into a 20-letter code, /recovery memory <code> restores it in another conversation.",
   "keywords": [
@@ -14,11 +14,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zilta-amaze/dsh-recovery.git"
+    "url": "git+https://github.com/zilta-amaze/dsh-recovery-memory.git"
   },
-  "homepage": "https://github.com/zilta-amaze/dsh-recovery#readme",
+  "homepage": "https://github.com/zilta-amaze/dsh-recovery-memory#readme",
   "bugs": {
-    "url": "https://github.com/zilta-amaze/dsh-recovery/issues"
+    "url": "https://github.com/zilta-amaze/dsh-recovery-memory/issues"
   },
   "main": "./index.js",
   "exports": {

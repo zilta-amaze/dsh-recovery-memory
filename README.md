@@ -1,6 +1,6 @@
-# dsh-recovery
+# dsh-recovery-memory
 
-[![tests](https://github.com/zilta-amaze/dsh-recovery/actions/workflows/ci.yml/badge.svg)](https://github.com/zilta-amaze/dsh-recovery/actions/workflows/ci.yml)
+[![tests](https://github.com/zilta-amaze/dsh-recovery-memory/actions/workflows/ci.yml/badge.svg)](https://github.com/zilta-amaze/dsh-recovery-memory/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 给 DeepSeek Harness 用的「对话记忆恢复」插件：
@@ -14,13 +14,13 @@
 
 记忆默认保存在 `$DSH_HOME/recovery/`。要换到共享存储、同步盘或外置卡：
 
-1. 在 profile 的 `cordis.patch.yml` 里给 `dsh-recovery` 加上 `dir`
+1. 在 profile 的 `cordis.patch.yml` 里给 `dsh-recovery-memory` 加上 `dir`
    （按 bundle 安装时用 id 覆盖；按「插入一行」安装时改成完整的 `insert` 块）：
 
    ```yaml
-   - id: dsh-recovery
+   - id: dsh-recovery-memory
      config:
-       dir: /storage/emulated/0/Download/dsh-recovery
+       dir: /storage/emulated/0/Download/dsh-recovery-memory
    ```
 
 2. 把旧目录里的 `*.json` 拷到新目录（不拷的话，旧恢复码在新位置找不到）；
@@ -87,10 +87,10 @@ ABCDE-FGHJK-LMNPQ-RSTUV
 ### 最快：直接从 GitHub 安装
 
 ```sh
-dsh plugin --profile web add github:zilta-amaze/dsh-recovery
+dsh plugin --profile web add github:zilta-amaze/dsh-recovery-memory
 ```
 
-已验证可用（pnpm 从仓库拉取，零依赖，约 7 秒）。装完还要把 `dsh-recovery` 列进
+已验证可用（pnpm 从仓库拉取，零依赖，约 7 秒）。装完还要把 `dsh-recovery-memory` 列进
 profile 的 `dsh.profile.bundles`，或按下面的方式在 patch 里插一行，再重启引擎。
 
 ### 方式一：在 profile 里插入一行（推荐给自定义 profile）
@@ -98,15 +98,15 @@ profile 的 `dsh.profile.bundles`，或按下面的方式在 patch 里插一行�
 ```sh
 # 1. 把包链接进 profile
 cd "$DSH_HOME/profiles/web"
-pnpm add link:/absolute/path/to/dsh-recovery
+pnpm add link:/absolute/path/to/dsh-recovery-memory
 ```
 
 然后在 `$DSH_HOME/profiles/web/cordis.patch.yml` 末尾加上：
 
 ```yaml
 - insert:
-    - id: dsh-recovery
-      name: dsh-recovery
+    - id: dsh-recovery-memory
+      name: dsh-recovery-memory
       config:
         restoreChars: 48000
         maxRecordBytes: 4000000
@@ -124,7 +124,7 @@ pnpm add link:/absolute/path/to/dsh-recovery
 {
   "dsh": {
     "profile": {
-      "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "dsh-recovery"]
+      "bundles": ["@deepseek-ai/dsh-base", "@deepseek-ai/dsh-web-app", "dsh-recovery-memory"]
     }
   }
 }
@@ -134,8 +134,8 @@ bundle 模式会应用本包自带的 `cordis.patch.yml`。
 
 > ⚠️ 两种方式**只选一种**。同时生效会让 `/recovery` 注册两次，启动直接报错。
 
-> 插件本体挪了位置（比如把 `dsh-recovery/` 从 workspaces 移到别处）时，还要同步改
-> profile `package.json` 里的 `link:` 路径并重建 `node_modules/dsh-recovery` 符号链接，
+> 插件本体挪了位置（比如把 `dsh-recovery-memory/` 从 workspaces 移到别处）时，还要同步改
+> profile `package.json` 里的 `link:` 路径并重建 `node_modules/dsh-recovery-memory` 符号链接，
 > 否则启动会报模块找不到。
 
 ## 配置
@@ -170,19 +170,19 @@ bundle 模式会应用本包自带的 `cordis.patch.yml`。
 用 id 覆盖 bundle 层的默认配置：
 
 ```yaml
-- id: dsh-recovery
+- id: dsh-recovery-memory
   config:
-    dir: /storage/emulated/0/Download/dsh-recovery
+    dir: /storage/emulated/0/Download/dsh-recovery-memory
 ```
 
 按「插入一行」的方式安装时，用完整块，并把同一份配置放进 `insert`：
 
 ```yaml
 - insert:
-    - id: dsh-recovery
-      name: dsh-recovery
+    - id: dsh-recovery-memory
+      name: dsh-recovery-memory
       config:
-        dir: /storage/emulated/0/Download/dsh-recovery
+        dir: /storage/emulated/0/Download/dsh-recovery-memory
 ```
 
 - 绝对路径直接使用；`~/xxx` 展开到系统 home；相对路径按 `$DSH_HOME` 解析；
@@ -193,9 +193,9 @@ bundle 模式会应用本包自带的 `cordis.patch.yml`。
 
 | 想放哪 | `dir` 示例 | 说明 |
 |---|---|---|
-| 共享存储（文件管理器可见、可备份） | `/storage/emulated/0/Download/dsh-recovery` | 本机实测可写；但 `0600` 会退化为 `0660` |
-| 同步盘（跨设备） | `~/Sync/dsh-recovery` | 依赖同步工具覆盖该目录；另一台设备要装同一插件并指向同步后的路径 |
-| 外置 SD 卡 | `/storage/XXXX-XXXX/dsh-recovery` | 需要该卷对应用可写 |
+| 共享存储（文件管理器可见、可备份） | `/storage/emulated/0/Download/dsh-recovery-memory` | 本机实测可写；但 `0600` 会退化为 `0660` |
+| 同步盘（跨设备） | `~/Sync/dsh-recovery-memory` | 依赖同步工具覆盖该目录；另一台设备要装同一插件并指向同步后的路径 |
+| 外置 SD 卡 | `/storage/XXXX-XXXX/dsh-recovery-memory` | 需要该卷对应用可写 |
 
 ⚠️ 放到共享存储/同步盘后，记忆仍是明文 JSON，能读该目录的其他应用也能看到内容；
 隐私优先的对话建议留在默认目录。

@@ -1,4 +1,4 @@
-# Add dsh-recovery
+# Add dsh-recovery-memory
 
 Conversation memory for dsh, keyed by a 20-letter recovery code.
 

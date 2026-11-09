@@ -1,11 +1,11 @@
-# Mounts dsh-recovery as one plugin row.
+# Mounts dsh-recovery-memory as one plugin row.
 #
 # Use either this bundle patch (list the package in `dsh.profile.bundles`) or
 # an explicit row in the profile's cordis.patch.yml — never both, or the
 # `/recovery` command is registered twice and startup fails.
 - insert:
-    - id: dsh-recovery
-      name: dsh-recovery
+    - id: dsh-recovery-memory
+      name: dsh-recovery-memory
       config:
         # Model-facing injection budget, in characters. When the stored
         # conversation fits, it is injected in full; only a larger one falls

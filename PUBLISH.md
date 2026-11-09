@@ -1,4 +1,4 @@
-# Publishing `dsh-recovery`
+# Publishing `dsh-recovery-memory`
 
 Status of everything this machine can prepare offline, and the steps that need a GitHub account.
 
@@ -8,7 +8,7 @@ Status of everything this machine can prepare offline, and the steps that need a
 
 ## 0 · Repository — done
 
-- <https://github.com/zilta-amaze/dsh-recovery> (public, `main`, tag `v0.1.0`)
+- <https://github.com/zilta-amaze/dsh-recovery-memory> (public, `main`, tag `v0.1.0`)
 - Topic `dsh-plugin` set (the catalogue CI requires it), plus `dsh`, `deepseek-harness`, `memory`,
   `context`
 - `package.json` declares `dsh.bundle` → `cordis.patch.yml`, so it installs with `dsh plugin add`
@@ -18,7 +18,7 @@ Status of everything this machine can prepare offline, and the steps that need a
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the offline suite on Node 20, 22 and 24
 for every push and pull request; the README badge tracks `main`. First run, all three jobs green:
-<https://github.com/zilta-amaze/dsh-recovery/actions/runs/42641245578>
+<https://github.com/zilta-amaze/dsh-recovery-memory/actions/runs/42641245578>
 
 Note for future pushes: creating or changing a file under `.github/workflows/` needs a token with the
 `workflow` scope in addition to `repo`.
@@ -26,7 +26,7 @@ Note for future pushes: creating or changing a file under `.github/workflows/` n
 ## 2 · Release — done
 
 `v0.1.0` is tagged and published:
-<https://github.com/zilta-amaze/dsh-recovery/releases/tag/v0.1.0>
+<https://github.com/zilta-amaze/dsh-recovery-memory/releases/tag/v0.1.0>
 
 ## 3 · Submit to the catalogue — after 2026-11-10
 
@@ -37,11 +37,11 @@ repository is a day old (created 2026-11-09 22:55 +08:00 → submit from 2026-11
 2. Add exactly one file, named after the repository:
 
    ```text
-   data/plugins/zilta-amaze__dsh-recovery.yml
+   data/plugins/zilta-amaze__dsh-recovery-memory.yml
    ```
 
-   Its contents are already written in [`market/dsh-recovery.yml`](market/dsh-recovery.yml).
-3. Open a PR. Title: `Add dsh-recovery`. Body:
+   Its contents are already written in [`market/dsh-recovery-memory.yml`](market/dsh-recovery-memory.yml).
+3. Open a PR. Title: `Add dsh-recovery-memory`. Body:
    [`market/PR-body.md`](market/PR-body.md).
 
 Rules that will be checked:
@@ -74,5 +74,5 @@ Add `screenshots.json` next to `package.json` with 1–8 paths relative to it (n
 `..`), then push the images. For a market **tile**, the entry's `icon:` must be a GitHub-hosted
 raster (`png`/`jpg`/`webp`); the `icon.svg` shipped for the plugin manager is not accepted there.
 The market tile is already in place: `assets/icon.png` (512×512 PNG, GitHub-hosted) is declared as
-`icon:` in [`market/dsh-recovery.yml`](market/dsh-recovery.yml), and `icon.svg` is the matching vector
+`icon:` in [`market/dsh-recovery-memory.yml`](market/dsh-recovery-memory.yml), and `icon.svg` is the matching vector
 for the plugin manager.
