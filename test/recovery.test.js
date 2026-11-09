@@ -224,10 +224,12 @@ test('/recovery create then /recovery memory restores the transcript', async () 
   assert.equal(restoredAgent.followups.length, 1)
   const followup = restoredAgent.followups[0]
   assert.equal(followup.role, 'user')
-  assert.equal(followup.content[0].text, '请总结上面恢复的这段会话。')
+  assert.equal(followup.content[0].text, '请按要求总结上面恢复的这段会话，最后一行写「记忆已恢复」。')
   assert.equal(followup.source.kind, 'recovery')
   assert.equal(followup.source.summary, true)
   assert.match(restored.text, /模型正据此总结上一段会话/u)
+  assert.ok(restored.text.trimEnd().endsWith('记忆已恢复。'), restored.text)
+  assert.ok(restoredAgent.injected[0].content[0].text.trimEnd().endsWith('记忆已恢复。'))
 })
 
 test('memory shorthand accepts concatenated codes and bare codes', async () => {
@@ -362,6 +364,39 @@ test('digest carries the summary instruction only when asked', () => {
   const summarized = renderDigest(record, 5_000, { summarize: true })
   assert.equal(summarized.summarized, true)
   assert.match(summarized.text, /【请先总结】/u)
-  assert.match(summarized.text, /3–6 条要点/u)
+  assert.match(summarized.text, /尽量把关键信息都写出来/u)
   assert.ok(summarized.text.length <= 5_000)
+})
+
+test('default digest keeps long messages intact instead of compressing them', () => {
+  const long = '这是一段很长的正文。'.repeat(600) // ~5400 chars, above the old 2400 cap
+  const record = {
+    code: SAMPLE_CODE,
+    createdAt: '2026-11-09T14:20:00.000Z',
+    stats: { sourceMessages: 2 },
+    messages: [
+      { role: 'user', text: '开始' },
+      { role: 'assistant', text: long }
+    ]
+  }
+  const digest = renderDigest(record, undefined, { summarize: true })
+  assert.equal(digest.complete, true)
+  assert.equal(digest.omitted, 0)
+  assert.ok(digest.text.includes(long), 'long message must be preserved verbatim')
+  assert.ok(digest.text.length > long.length)
+  assert.ok(digest.text.trimEnd().endsWith('记忆已恢复。'))
+  assert.doesNotMatch(digest.text, /本条过长，已截断/u)
+})
+
+test('oversized restores say what was left on disk instead of dropping it silently', () => {
+  const messages = Array.from({ length: 40 }, (_, index) => ({
+    role: 'user',
+    text: `第${index}条 ${'内容'.repeat(100)}`
+  }))
+  const record = { code: SAMPLE_CODE, createdAt: '2026-11-09T14:20:00.000Z', stats: { sourceMessages: 40 }, messages }
+  const digest = renderDigest(record, 4_000, { summarize: false })
+  assert.equal(digest.complete, false)
+  assert.ok(digest.omitted > 0)
+  assert.match(digest.text, /本次载入 \d+\/40 条；其余 \d+ 条仍在本机的完整记录里/u)
+  assert.ok(digest.text.trimEnd().endsWith('记忆已恢复。'))
 })

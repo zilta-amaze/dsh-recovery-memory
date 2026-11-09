@@ -7,11 +7,12 @@
     - id: dsh-recovery
       name: dsh-recovery
       config:
-        # Model-facing digest budget, in characters (~1 token ≈ 2 chars for
-        # mixed Chinese/English). Raise it to restore more of a conversation.
-        restoreChars: 12000
+        # Model-facing injection budget, in characters. When the stored
+        # conversation fits, it is injected in full; only a larger one falls
+        # back to head + tail (the full record stays on disk).
+        restoreChars: 48000
         # Ceiling for one stored transcript, in bytes.
-        maxRecordBytes: 400000
+        maxRecordBytes: 4000000
         # Ask the model to summarize the recovered conversation after every
         # `/recovery memory`. Set to false to restore silently.
         autoSummary: true

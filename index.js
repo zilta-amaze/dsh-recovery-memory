@@ -16,7 +16,7 @@
 import { randomUUID } from 'node:crypto'
 import { CODE_LENGTH, formatCode, normalizeCode } from './lib/code.js'
 import { RECORD_VERSION, RecoveryStore } from './lib/store.js'
-import { buildSnapshot, formatTime, renderDigest } from './lib/transcript.js'
+import { CLOSING, buildSnapshot, formatTime, renderDigest } from './lib/transcript.js'
 
 /** Cordis plugin name. */
 export const name = 'dsh-recovery'
@@ -37,7 +37,7 @@ const USAGE = [
 ].join('\n')
 
 /** The follow-up that makes the model summarize the restored conversation. */
-const SUMMARY_REQUEST = '请总结上面恢复的这段会话。'
+const SUMMARY_REQUEST = '请按要求总结上面恢复的这段会话，最后一行写「记忆已恢复」。'
 
 /**
  * Register the `/recovery` command.
@@ -281,7 +281,7 @@ function renderCreated(record, omitted) {
   const stats = record.stats ?? {}
   const kept = Number.isSafeInteger(stats.kept) ? stats.kept : record.messages.length
   const size = formatBytes(Number.isSafeInteger(stats.bytes) ? stats.bytes : 0)
-  const dropped = omitted > 0 ? `，省略 ${omitted} 条较早消息` : ''
+  const dropped = omitted > 0 ? `，省略 ${omitted} 条较早消息` : '，完整保存'
   const title = typeof record.title === 'string' && record.title !== '' ? [`  · 原会话：${record.title}`] : []
   const code = formatCode(record.code)
   return [
@@ -289,7 +289,7 @@ function renderCreated(record, omitted) {
     '',
     `  ${code}`,
     '',
-    `  · 抓取 ${stats.sourceMessages ?? kept} 条消息，保留 ${kept} 条（${size}）${dropped}`,
+    `  · 抓取 ${stats.sourceMessages ?? kept} 条消息，保存 ${kept} 条（${size}）${dropped}`,
     `  · 生成于 ${formatTime(record.createdAt)}`,
     ...title,
     '',
@@ -311,21 +311,27 @@ function renderCreated(record, omitted) {
 function renderRestored(record, digest, summary = { supported: false, started: false }) {
   const stats = record.stats ?? {}
   const total = Number.isSafeInteger(stats.sourceMessages) ? stats.sourceMessages : record.messages.length
-  const dropped = digest.omitted > 0 ? `，省略 ${digest.omitted} 条较早消息` : ''
+  const stored = Array.isArray(record.messages) ? record.messages.length : total
+  const loaded = digest.complete === true
+    ? `本次完整载入 ${digest.included} 条（${formatBytes(digest.bytes)}）`
+    : `本次载入 ${digest.included}/${stored} 条（${formatBytes(digest.bytes)}），其余 ${digest.omitted} 条仍在本机的完整记录里`
   const title = typeof record.title === 'string' && record.title !== '' ? [`  · 原会话：${record.title}`] : []
+  const delivery = digest.complete === true ? '这段记忆已完整注入当前会话' : '这段记忆已作为上下文注入当前会话'
   return [
-    `🧠 记忆已恢复：${formatCode(record.code)}`,
+    `🧠 记忆载入完成：${formatCode(record.code)}`,
     '',
     `  · 来自 ${formatTime(record.createdAt)} 的对话（${total} 条消息）`,
-    `  · 本次载入 ${digest.included} 条，约 ${formatBytes(digest.bytes)}${dropped}`,
+    `  · ${loaded}`,
     ...title,
     '',
     summary.started === true
-      ? '这段记忆已注入当前会话，模型正据此总结上一段会话；你也可以直接接着提问。'
-      : '这段记忆已作为上下文注入当前会话，从你下一条消息开始对模型生效。',
+      ? `${delivery}，模型正据此总结上一段会话；你也可以直接接着提问。`
+      : `${delivery}，从你下一条消息开始对模型生效。`,
     ...(summary.started !== true && summary.supported === false
       ? ['', '当前环境不支持自动总结，你可以直接问“刚才那个会话讲了什么”。']
-      : [])
+      : []),
+    '',
+    CLOSING
   ].join('\n')
 }
 
