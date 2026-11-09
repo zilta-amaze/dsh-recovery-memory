@@ -7,6 +7,28 @@
 
 记忆保存在本机 `$DSH_HOME/recovery/` 下，一个恢复码一个文件；不上传、不同步。
 
+## 更改记忆路径（三步）
+
+记忆默认保存在 `$DSH_HOME/recovery/`。要换到共享存储、同步盘或外置卡：
+
+1. 在 profile 的 `cordis.patch.yml` 里给 `dsh-recovery` 加上 `dir`：
+
+   ```yaml
+   - insert:
+       - id: dsh-recovery
+         name: dsh-recovery
+         config:
+           dir: /storage/emulated/0/Download/dsh-recovery
+   ```
+
+2. 把旧目录里的 `*.json` 拷到新目录（不拷的话，旧恢复码在新位置找不到）；
+3. 重启引擎。之后 `/recovery where` 会显示新目录、来源和可用状态。
+
+也支持环境变量 `DSH_RECOVERY_DIR`（优先级：配置 `dir` > 环境变量 > 默认）。
+`~/xxx` 展开到系统 home，相对路径按 `$DSH_HOME` 解析。
+
+完整说明见 [记忆存在哪里 / 换到别的位置](#换到别的位置)。
+
 ## 用法
 
 | 输入 | 作用 |
@@ -100,6 +122,10 @@ pnpm add link:/absolute/path/to/dsh-recovery
 bundle 模式会应用本包自带的 `cordis.patch.yml`。
 
 > ⚠️ 两种方式**只选一种**。同时生效会让 `/recovery` 注册两次，启动直接报错。
+
+> 插件本体挪了位置（比如把 `dsh-recovery/` 从 workspaces 移到别处）时，还要同步改
+> profile `package.json` 里的 `link:` 路径并重建 `node_modules/dsh-recovery` 符号链接，
+> 否则启动会报模块找不到。
 
 ## 配置
 
