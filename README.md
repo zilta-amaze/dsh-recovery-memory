@@ -14,14 +14,13 @@
 
 记忆默认保存在 `$DSH_HOME/recovery/`。要换到共享存储、同步盘或外置卡：
 
-1. 在 profile 的 `cordis.patch.yml` 里给 `dsh-recovery` 加上 `dir`：
+1. 在 profile 的 `cordis.patch.yml` 里给 `dsh-recovery` 加上 `dir`
+   （按 bundle 安装时用 id 覆盖；按「插入一行」安装时改成完整的 `insert` 块）：
 
    ```yaml
-   - insert:
-       - id: dsh-recovery
-         name: dsh-recovery
-         config:
-           dir: /storage/emulated/0/Download/dsh-recovery
+   - id: dsh-recovery
+     config:
+       dir: /storage/emulated/0/Download/dsh-recovery
    ```
 
 2. 把旧目录里的 `*.json` 拷到新目录（不拷的话，旧恢复码在新位置找不到）；
@@ -167,7 +166,16 @@ bundle 模式会应用本包自带的 `cordis.patch.yml`。
 
 优先级：配置 `dir` > 环境变量 `DSH_RECOVERY_DIR` > 默认。
 
-在 profile 的 `cordis.patch.yml` 里改：
+在 profile 的 `cordis.patch.yml` 里改。按 bundle 安装（`dsh plugin add` 的默认结果）时，
+用 id 覆盖 bundle 层的默认配置：
+
+```yaml
+- id: dsh-recovery
+  config:
+    dir: /storage/emulated/0/Download/dsh-recovery
+```
+
+按「插入一行」的方式安装时，用完整块，并把同一份配置放进 `insert`：
 
 ```yaml
 - insert:
