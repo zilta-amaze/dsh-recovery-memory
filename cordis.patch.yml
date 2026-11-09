@@ -1,0 +1,14 @@
+# Mounts dsh-recovery as one plugin row.
+#
+# Use either this bundle patch (list the package in `dsh.profile.bundles`) or
+# an explicit row in the profile's cordis.patch.yml — never both, or the
+# `/recovery` command is registered twice and startup fails.
+- insert:
+    - id: dsh-recovery
+      name: dsh-recovery
+      config:
+        # Model-facing digest budget, in characters (~1 token ≈ 2 chars for
+        # mixed Chinese/English). Raise it to restore more of a conversation.
+        restoreChars: 12000
+        # Ceiling for one stored transcript, in bytes.
+        maxRecordBytes: 400000

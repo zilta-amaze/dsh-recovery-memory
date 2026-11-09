@@ -1,0 +1,38 @@
+{
+  "name": "dsh-recovery",
+  "version": "0.1.0",
+  "description": "Recovery codes for DeepSeek Harness conversations: /recovery create snapshots the current memory into a 20-letter code, /recovery memory <code> restores it in another conversation.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "memory",
+    "recovery",
+    "context"
+  ],
+  "type": "module",
+  "license": "MIT",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "lib/*.js",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "dsh": ">=0.2.0"
+  },
+  "scripts": {
+    "test": "node test/recovery.test.js"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
