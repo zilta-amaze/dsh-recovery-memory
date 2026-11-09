@@ -14,18 +14,14 @@ Status of everything this machine can prepare offline, and the steps that need a
 - `package.json` declares `dsh.bundle` → `cordis.patch.yml`, so it installs with `dsh plugin add`
 - `repository`, `homepage` and `bugs` point at the repository
 
-## 1 · CI — prepared, needs a `workflow`-scope token
+## 1 · CI — done
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the offline suite on Node 20, 22 and 24
-for every push and pull request; the README badge tracks `main`.
+for every push and pull request; the README badge tracks `main`. First run, all three jobs green:
+<https://github.com/zilta-amaze/dsh-recovery/actions/runs/42641245578>
 
-GitHub refuses a push that creates a workflow file unless the token carries the **`workflow`** scope
-in addition to `repo`. The token used for the first upload had only `repo`, so this file is committed
-locally and not yet on `main`. To finish it, create a token with both scopes:
-
-<https://github.com/settings/tokens/new?description=dsh-recovery-ci&scopes=repo,workflow>
-
-then push the pending commit with `git push origin main`.
+Note for future pushes: creating or changing a file under `.github/workflows/` needs a token with the
+`workflow` scope in addition to `repo`.
 
 ## 2 · Release — done
 
